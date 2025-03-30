@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fabric Defect Detection</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <h1>Fabric Defect Detection</h1>
+            <div class="camera-container">
+                <!-- Permission box - visible by default -->
+                <div id="permission-box" class="permission-box">
+                    <h3>Camera Access Required</h3>
+                    <p>Please allow camera access to start the video feed.</p>
+                    <button id="grant-access">Grant Access</button>
+                </div>
+
+                <!-- Video feed - hidden until access granted -->
+                <img id="camera-stream" src="" alt="Camera Stream" style="display: none;">
+            </div>
+        </div>
+
+        <!-- Sidebar remains unchanged -->
+        <aside class="sidebar">
+            <h2>YOLOv8s</h2>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/settings">Settings</a></li>
+            </ul>
+            <div class="footer">
+                &copy; YOLOV8S
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const permissionBox = document.getElementById('permission-box');
+        const grantButton = document.getElementById('grant-access');
+        const cameraStream = document.getElementById('camera-stream');
+
+        grantButton.addEventListener('click', async () => {
+            try {
+                // Show loading state
+                grantButton.disabled = true;
+                grantButton.textContent = 'Connecting...';
+
+                // Start the video feed
+                cameraStream.style.display = 'block';
+                cameraStream.src = '/video_feed?' + Date.now();
+
+                // Hide permission box after successful connection
+                cameraStream.onload = () => {
+                    permissionBox.style.display = 'none';
+                };
+
+                // Handle stream errors
+                cameraStream.onerror = () => {
+                    permissionBox.style.display = 'block';
+                    cameraStream.style.display = 'none';
+                    grantButton.disabled = false;
+                    grantButton.textContent = 'Grant Access';
+                    alert('Failed to connect to camera. Please try again.');
+                };
+
+            } catch (error) {
+                alert('Error initializing camera: ' + error.message);
+                grantButton.disabled = false;
+                grantButton.textContent = 'Grant Access';
+            }
+        });
+    </script>
+</body>
+</html>
