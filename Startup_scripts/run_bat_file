@@ -1,0 +1,18 @@
+@echo off
+cd /d C:\Yolo
+
+call "Venv\Scripts\Activate.bat"
+
+:: Start uvicorn server in this window
+start "Uvicorn Server" cmd /k uvicorn app:app --reload
+
+timeout /t 7 >nul
+
+:: Open browser
+start /wait "" "http://127.0.0.1:8000"
+
+:: After browser closes, close the uvicorn server
+timeout /t 1 >nul
+
+:: Kill the uvicorn server (python process)
+taskkill /f /im "python.exe"
