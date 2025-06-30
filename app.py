@@ -1,66 +1,36 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from contextlib import asynccontextmanager
 import cv2
-import time
 from ultralytics import YOLO
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Initialize camera on startup
-    global capture
-    capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Use DirectShow backend for Windows
-    if not capture.isOpened():
-        raise RuntimeError("Could not open camera")
-    
-    # Camera warm-up
-    time.sleep(2.0)
-    capture.read()  # Dummy read to initialize
-    
-    yield
-    
-    # Cleanup on shutdown
-    capture.release()
+# Load your custom YOLOv8 model
+model = YOLO("USE_THIS.pt")  # Replace with your model's path
 
-app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Open the webcam (0 = default webcam, change to 1 or 2 if needed)
+cap = cv2.VideoCapture(0)
 
-model = YOLO("AUG_ZJU.pt")
+# Check if the webcam is opened correctly
+if not cap.isOpened():
+    print("Error: Could not open webcam.")
+    exit()
 
-def generate_frames():
-    while True:
-        try:
-            success, frame = capture.read()
-            if not success:
-                print("Frame capture error, retrying...")
-                time.sleep(0.1)
-                continue
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("Error: Failed to capture frame.")
+        break
 
-            results = model(frame)
-            annotated_frame = results[0].plot()
+    # Run inference using the custom model
+    results = model(frame)
 
-            ret, buffer = cv2.imencode('.jpg', annotated_frame)
-            if not ret:
-                continue
+    # Get the annotated frame with detections
+    annotated_frame = results[0].plot()
 
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-            time.sleep(0.03)
+    # Display the annotated frame in a window
+    cv2.imshow(f"Aug_ZJU", annotated_frame)
 
-        except Exception as e:
-            print(f"Stream error: {str(e)}")
-            time.sleep(1)
+    # Press 'q' to exit the loop or close the window
+    if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty("Custom Model Detection", cv2.WND_PROP_VISIBLE) < 1:
+        break
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-@app.get("/video_feed")
-def video_feed():
-    return StreamingResponse(
-        generate_frames(),
-        media_type="multipart/x-mixed-replace; boundary=frame"
-    )
+# Release the webcam and close the window
+cap.release()
+cv2.destroyAllWindows()
