@@ -1,77 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fabric Defect Detection</title>
-    <link rel="stylesheet" href="/static/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fabric Defect Detection</title>
+  <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
-    <div class="page-wrapper">
-        <!-- Main Content Area -->
-        <div class="main-content">
-            <h1>Fabric Defect Detection</h1>
-            <div class="camera-container">
-                <!-- Permission box - visible by default -->
-                <div id="permission-box" class="permission-box">
-                    <h3>Camera Access Required</h3>
-                    <p>Please allow camera access to start the video feed.</p>
-                    <button id="grant-access">Grant Access</button>
-                </div>
-
-                <!-- Video feed - hidden until access granted -->
-                <img id="camera-stream" src="" alt="Camera Stream" style="display: none;">
-            </div>
+  <div class="page-wrapper">
+    <!-- Main Content -->
+    <div class="main-content">
+      <h1>Fabric Defect Detection</h1>
+      <div class="camera-container" id="camera-container">
+        <!-- Permission box (shown first) -->
+        <div id="permission-box" class="permission-box">
+          <h3>Camera Access Required</h3>
+          <p>Please allow camera access to start the video feed.</p>
+          <button id="grant-access">Grant Access</button>
         </div>
 
-        <!-- Sidebar remains unchanged -->
-        <aside class="sidebar">
-            <h2>YOLOv8s</h2>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/settings">Settings</a></li>
-            </ul>
-            <div class="footer">
-                &copy; YOLOV8S
-            </div>
-        </aside>
+        <!-- Video feed (hidden until access granted) -->
+        <img id="camera-stream" src="" alt="Camera Stream" style="display: none;" />
+      </div>
     </div>
 
-    <script>
-        const permissionBox = document.getElementById('permission-box');
-        const grantButton = document.getElementById('grant-access');
-        const cameraStream = document.getElementById('camera-stream');
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 id="sidebar-title">YOLOv8s</h2>
+      <ul id="sidebar-menu">
+        <li><a href="/" onclick="showHomeMenu(event)">Home</a></li>
+        <li><a href="#" onclick="showSettingsMenu(event)">Settings</a></li>
+      </ul>
+      <div class="footer">&copy; YOLOV8S</div>
+    </aside>
+  </div>
 
-        grantButton.addEventListener('click', async () => {
-            try {
-                // Show loading state
-                grantButton.disabled = true;
-                grantButton.textContent = 'Connecting...';
+  <script>
+    // --- Camera Access Logic ---
+    const permissionBox = document.getElementById('permission-box');
+    const grantButton = document.getElementById('grant-access');
+    const cameraStream = document.getElementById('camera-stream');
 
-                // Start the video feed
-                cameraStream.style.display = 'block';
-                cameraStream.src = '/video_feed?' + Date.now();
+    grantButton.addEventListener('click', async () => {
+      try {
+        grantButton.disabled = true;
+        grantButton.textContent = 'Connecting...';
 
-                // Hide permission box after successful connection
-                cameraStream.onload = () => {
-                    permissionBox.style.display = 'none';
-                };
+        cameraStream.style.display = 'block';
+        cameraStream.src = '/video_feed?' + Date.now();
 
-                // Handle stream errors
-                cameraStream.onerror = () => {
-                    permissionBox.style.display = 'block';
-                    cameraStream.style.display = 'none';
-                    grantButton.disabled = false;
-                    grantButton.textContent = 'Grant Access';
-                    alert('Failed to connect to camera. Please try again.');
-                };
+        cameraStream.onload = () => {
+          permissionBox.style.display = 'none';
+        };
 
-            } catch (error) {
-                alert('Error initializing camera: ' + error.message);
-                grantButton.disabled = false;
-                grantButton.textContent = 'Grant Access';
-            }
-        });
-    </script>
+        cameraStream.onerror = () => {
+          permissionBox.style.display = 'block';
+          cameraStream.style.display = 'none';
+          grantButton.disabled = false;
+          grantButton.textContent = 'Grant Access';
+          alert('Failed to connect to camera. Please try again.');
+        };
+      } catch (error) {
+        alert('Error initializing camera: ' + error.message);
+        grantButton.disabled = false;
+        grantButton.textContent = 'Grant Access';
+      }
+    });
+
+    // --- Sidebar Logic ---
+    const sidebarTitle = document.getElementById('sidebar-title');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    const cameraContainer = document.getElementById('camera-container');
+
+    function showHomeMenu(e) {
+      if (e) e.preventDefault();
+      sidebarTitle.textContent = 'YOLOv8s';
+      sidebarMenu.innerHTML = `
+        <li><a href="/" onclick="showHomeMenu(event)">Home</a></li>
+        <li><a href="#" onclick="showSettingsMenu(event)">Settings</a></li>
+      `;
+    }
+
+    function showSettingsMenu(e) {
+      if (e) e.preventDefault();
+      sidebarTitle.textContent = 'Settings';
+      sidebarMenu.innerHTML = `
+        <li><a href="#" onclick="showHomeMenu(event)">&#8592; Back</a></li>
+        <li><a href="#" onclick="toggleFullScreen(event)">Full Screen</a></li>
+        <li><a href="#" onclick="showInformation(event)">Information</a></li>
+      `;
+    }
+
+    function toggleFullScreen(e) {
+      if (e) e.preventDefault();
+      if (!document.fullscreenElement) {
+        cameraContainer.requestFullscreen().catch(err => 
+          alert('Error enabling full-screen: ' + err)
+        );
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function showInformation(e) {
+      if (e) e.preventDefault();
+      sidebarTitle.textContent = 'Information';
+      sidebarMenu.innerHTML = `
+        <li><a href="#" onclick="showSettingsMenu(event)">&#8592; Back</a></li>
+        <li><span><b>Lightweight Computer Vision Based Textile Flaw Detection System Using YOLOv8s Algorithm</b></span></li>
+        <li><span><b>Created by:</b><br> Francis Albert M. Lerona<br>Calvin Ken N. Palasigue<br>Sean Russel E. Remonte</span></li>
+      `;
+    }
+  </script>
 </body>
 </html>
